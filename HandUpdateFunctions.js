@@ -224,10 +224,10 @@ function setTipVelocity( leapHand , threeHand ){
   var leapVel  = leapHand.fingers[1].tipVelocity;
   var threeVel = threeHand.fingers[9].velocity;
 
-  setPosition( leapVel , threeVel );
+  setPosition( leapVel , threeVel , true );
 
 }
-function setPosition( leapPos ,  threePos ){
+function setPosition( leapPos ,  threePos , vel ){
 
   var p = leapToScene( leapPos );
   
@@ -240,10 +240,17 @@ function setPosition( leapPos ,  threePos ){
 
   }else{
 
-    threePos.copy( camera.position );
-    tv1.set( p[0] , p[1] -.3 , p[2] - .3 );
-    tv1.applyQuaternion( camera.quaternion );
-    threePos.add( tv1 );
+    if( vel == true ){
+      threePos.copy( camera.position );
+      tv1.set( p[0] , p[1] , p[2]);
+      tv1.applyQuaternion( camera.quaternion );
+      threePos.add( tv1 );
+    }else{
+      threePos.copy( camera.position );
+      tv1.set( p[0] , p[1] -.3 , p[2] - .3 );
+      tv1.applyQuaternion( camera.quaternion );
+      threePos.add( tv1 );
+    }
 
   }
 

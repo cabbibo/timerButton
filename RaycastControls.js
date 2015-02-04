@@ -214,7 +214,8 @@
 
     var origin    = this.tip;
     var direction = origin.clone()
-  
+ 
+   // console.log( direction );
     direction.sub( this.eye.position );
     direction.normalize();
 

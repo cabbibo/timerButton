@@ -35,6 +35,7 @@ function Interactable( position , name){
   this.viewPosition = new THREE.Vector3();
 
   this.active = false;
+  this.selected = false;
 
   var geo = new THREE.Geometry();
   geo.vertices.push( this.position );
@@ -46,7 +47,7 @@ function Interactable( position , name){
   });
   this.line = new THREE.Line( geo , mat );
 
-  scene.add( this.line );
+  //scene.add( this.line );
   scene.add( this.body );
 
   this.title = textCreator.createMesh( name );
@@ -57,6 +58,16 @@ function Interactable( position , name){
   this.title.material.depthWrite = false;
   this.title.material.needsUpdate = true;
   this.body.add( this.title );
+
+  this.body.hoverOver   = this._hoverOver.bind( this );
+  this.body.hoverOut    = this._hoverOut.bind( this );
+  this.body.select      = this._select.bind( this );
+  this.body.deselect    = this._deselect.bind( this );
+  
+  this.shell.hoverOver  = this._hoverOver.bind( this );
+  this.shell.hoverOut   = this._hoverOut.bind( this );
+  this.shell.select     = this._select.bind( this );
+  this.shell.deselect   = this._deselect.bind( this );
   
 
 }
@@ -85,24 +96,12 @@ Interactable.prototype.update = function( position , velocity ){
   //this.line.material.color.g = velocity.y;
   //this.line.material.color.b = velocity.z;
  
-  if( this.selected ){ };
+ /* if( this.selected ){ };
   this.check( position , velocity );
-  if( this.selected ){this._updateSelected( position , velocity ) }
+  if( this.selected ){this._updateSelected( position , velocity ) }*/
 
 
-}
-
-
-Interactable.prototype.check = function( position , velocity ){
-
-  this.checkHover( position );
-
-  if( this.selected ){
-    this.checkDeselection( position , velocity );
-  }else{
-    this.checkSelection( position , velocity );
-  }
-
+  if( this.selected ){ this._updateSelected( position , velocity ); }
 }
 
 
@@ -115,122 +114,6 @@ Interactable.prototype.setViewPosition = function( position ){
 
 }
 
-Interactable.prototype.checkHover = function( position ){
-
-  tv1.copy( this.position );
-  tv1.sub( position );
-
-  var dist = tv1.length();
-
-  // If we are within the proper radius
-  if( dist < this.outerRadius ){
-
-    if( !this.selected ){
-      //this._hoverOver();
-      this._select();
-    }
-
-  }else{
-
-    if( this.selected ){
-      //this._hoverOut();
-      this._deselect();
-    }
-
-  }
-
-}
-
-// Check to see if we have selected
-Interactable.prototype.checkSelection = function( position , velocity ){
-
-   tv1.copy( position );
-  tv1.sub( camera.position );
-
-
-  var dist = tv1.length();
-  tv1.normalize();
-
-
-  if( this.hovered ){
-
-    var speed = velocity.length();
-
-    tv2.copy( velocity );
-    tv2.normalize();
-
-    var match = tv2.dot( tv1 );
-
-    if( match > this.cutoffMatch && speed > this.cutoffSpeed ){
-
-      this._select();
-
-    }
-
-  }
-
-}
-
-Interactable.prototype.checkDeselection = function( position , velocity ){
-
-  tv1.copy( position );
-  tv1.sub( camera.position );
-
-
-  var dist = tv1.length();
-  tv1.normalize();
-
-
-  // If we are within the proper radius
-  if( !this.hovered ){ 
-
-    
-    var speed = velocity.length();
-
-    tv2.copy( velocity );
-    tv2.normalize();
-
-    var match = tv2.dot( tv1 );
-
-    if( match < -this.cutoffMatch && speed > this.cutoffSpeed  ){
-
-      this._deselect();
-
-    }
-
-  }
-
-
-
-}
-
-Interactable.prototype._select = function(){
-
-  this.body.scale.multiplyScalar( 1.2 );
-
-  this.selected = true;
-  selectedInteractables.push( this );
-
-  this.select();
-  
-}
-
-Interactable.prototype._deselect = function(){
-
-  console.log( 'DESEL' );
-  this.body.scale.multiplyScalar( 1/1.2 );
-
-  this.selected = false;
-
-  var index = selectedInteractables.indexOf( this );
-  
-  if( index > -1 ){ selectedInteractables.splice(index, 1); }
-
-  this._hoverOut();
-  this.deselect();
-
-  
-}
 
 Interactable.prototype._hoverOver = function(){
 
@@ -247,6 +130,7 @@ Interactable.prototype._hoverOver = function(){
 Interactable.prototype._hoverOut = function(){
 
   if( this.selected === false ){
+    console.log('make less');
     this.title.material.opacity = .5;
     this.body.material.opacity = .5;
   }
@@ -256,6 +140,28 @@ Interactable.prototype._hoverOut = function(){
   this.hoverOut();
 
 }
+
+Interactable.prototype._select   = function(){
+
+  //this.shell.material.wireframe = false;
+  //this.shell.material.needsUpdate = true;
+  //
+  this.body.scale.multiplyScalar(2);
+  this.selected = true;
+  
+  this.select();
+
+}
+
+Interactable.prototype._deselect   = function(){
+
+  this.body.scale.multiplyScalar(.5);
+  this.selected = false;
+
+  this.deselect();
+
+}
+
 
 Interactable.prototype.select    = function(){};
 Interactable.prototype.deselect  = function(){};
@@ -267,6 +173,7 @@ Interactable.prototype._updateSelected = function( position , velocity ){
 
   //this.position.copy( position );
 
+
   tv2.set( 0 , 0 , -.1 );
   tv2.applyQuaternion( camera.quaternion );
 
@@ -276,7 +183,7 @@ Interactable.prototype._updateSelected = function( position , velocity ){
   tv1.y *= tv2.y; //multiplyScalar( .5 );
   tv1.z *= tv2.z; //multiplyScalar( .5 );
 
-  this.position.add( tv1 );
+  this.position.copy( position );
 
 
   this.body.position.copy( this.position );

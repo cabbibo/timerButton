@@ -58,6 +58,7 @@
 
       var VR = true;
 
+
       var scene , camera , renderer , controls;
       var frame, controller, handL , handR;
 
@@ -70,6 +71,8 @@
       var velocityArrayLength = 50;
       var button;
 
+      var SPEED_CUTOFF = .2;
+      var BUTTON_SIZE  = .01;
       var aveVel = 0;
       var oAveVel = 0;
 
@@ -146,11 +149,13 @@
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.autoClear = false;
 
-        button = new THREE.Mesh( new THREE.IcosahedronGeometry( .01 , 1 ) , new THREE.MeshNormalMaterial() );
+        button = new THREE.Mesh( new THREE.IcosahedronGeometry( BUTTON_SIZE , 1 ) , new THREE.MeshNormalMaterial() );
 
         scene.add( button );
 
-        button.active = false;
+        button.active   = false;
+        button.down     = false;
+        button.touched  = false;
 
         //renderer.domElement.id = "renderer"
 
@@ -206,7 +211,7 @@
         // Put in HandUpdateFunctions.js for cleanliness of index
         initHands();
 
-        raycastControls = new RaycastControls(camera , handR.fingers[9] );
+        raycastControls = new RaycastControls(camera , handR.fingers[9].position );
 
         for( var i = 0; i < interactables.length; i++ ){
 
@@ -223,7 +228,7 @@
         controls.update();
         updateHands();
 
-       // raycastControls.update();
+        raycastControls.update();
         tween.update();
 
         var position = handR.fingers[9].position;
@@ -276,7 +281,7 @@
 
           aveVel /= velocityArray.length;
 
-          if( aveVel < .2 && oAveVel >= .2 ){
+          if( aveVel < SPEED_CUTOFF && oAveVel >= SPEED_CUTOFF ){
 
             button.visible = true;
             button.position.copy( position );
@@ -295,18 +300,59 @@
               console.log( 'SD  NO LT' );
             }
     
-          }else if( aveVel >= .2 && oAveVel < .2  ){
+          }else if( aveVel >= SPEED_CUTOFF && oAveVel < SPEED_CUTOFF  ){
+          
             button.visible = false;
 
             button.active = false;
 
-
-            console.log( 'speed up' );
-
-            }
+          }
             
           if( button.active == true ){
-          
+
+            // Testing to see if we have touched the button
+            tv1.copy( position );
+            tv1.sub( button.position );
+
+            var l = tv1.length();
+            if( l < BUTTON_SIZE ){
+
+              if( button.touched == false ){
+                button.touched = true;
+                onButtonClick();
+              }
+            
+            }else{
+
+              if( button.touched == true ){
+                button.touched = false;
+               // onButtonClick();
+              }
+            
+
+            }
+
+
+
+
+            // Moving the button to the position directly 
+            // in front of finger position
+            tv1.copy( position );
+            tv1.sub( camera.position );
+
+            tv1.normalize();
+            tv1.multiplyScalar( .015 );
+  
+            tv1.add( position )
+            
+            tv2.copy(  tv1 );
+            tv2.sub( button.position );
+
+            tv2.multiplyScalar( .1 );
+
+            button.position.add( tv2 );
+
+
           }else{
           //  console.log( aveVel );
           }
@@ -314,13 +360,13 @@
 
         }
        
-        /*for( var i = 0; i < interactables.length; i++ ){
+        for( var i = 0; i < interactables.length; i++ ){
 
           interactables[i].update( position , velocity );
 
         }
 
-        for( var i = 0; i < selectedInteractables.length; i++ ){
+        /*for( var i = 0; i < selectedInteractables.length; i++ ){
 
           tv1.set( 0 , -(i+1) * .04 , 0 );
           tv1.applyQuaternion( camera.quaternion );
@@ -359,6 +405,41 @@
       }
 
 
+      function onButtonClick(){
+
+        if( button.down ){
+          console.log('button up');
+          button.down = false;
+
+          for( var i = 0; i < interactables.length; i++ ){
+
+            if( interactables[i].selected == true ){
+
+              interactables[i]._deselect();
+
+            }
+
+          }
+
+
+        }else{
+          console.log('button down' );
+          button.down = true;
+
+          for( var i = 0; i < interactables.length; i++ ){
+
+            if( interactables[i].hovered == true ){
+
+              interactables[i]._select();
+
+            }
+
+          }
+
+        }
+
+
+      }
       function onLoad(){
 
         loaded ++;
